@@ -12,7 +12,8 @@ from numba import jit
 from skimage import segmentation, transform, exposure, measure
 from scipy import ndimage, LowLevelCallable
 import tqdm
-
+import requests
+import json
 
 PINK = np.array([255, 15, 255]) / 255.
 YELLOW = np.array([255, 255, 15]) / 255.
@@ -214,3 +215,24 @@ def align_to_image(geoms_df, image, le90=0.00003, search_buffer=0.0001, downscal
     results_df['shifted_geom'] = results_df.apply(func=translate_geom, axis=1, args=('xoff', 'yoff'))
 
     return results_df
+
+
+def from_geojson(source):
+    if source.startswith('http'):
+        response = requests.get(source)
+        geojson = json.loads(response.content)
+    else:
+        if os.path.exists(source):
+            with open(source, 'r') as f:
+                geojson = json.loads(f.read())
+        else:
+            raise ValueError("File does not exist: {}".format(source))
+
+    geometries = []
+    feats = []
+    for f in geojson['features']:
+        geom = geometry.shape(f['geometry'])
+        feats.append({'geometry': geom, 'properties': {}})
+        geometries.append(geom)
+
+    return geometries, feats
