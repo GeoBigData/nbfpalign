@@ -14,6 +14,7 @@ from scipy import ndimage, LowLevelCallable
 import tqdm
 import requests
 import json
+import os
 
 PINK = np.array([255, 15, 255]) / 255.
 YELLOW = np.array([255, 255, 15]) / 255.
