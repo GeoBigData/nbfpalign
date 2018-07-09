@@ -121,7 +121,7 @@ def calc_translation(geom, image, search_buffer=0.0001, le90=0.00003, downscale=
     chip = image.aoi(bbox=bounds)
 
     # extract out the rgb bands
-    rgb = chip.base_layer_match()
+    rgb = chip.base_layer_match(blm=True)
     # convert the geom to an array, aligned with the rgb
     bldg_array = geom_to_array(geom, chip)
     # also define the area within which we will allow the geometry's centroid to be shifted, defined
