@@ -152,12 +152,13 @@ def calc_translation(geom, image, search_buffer=0.0001, le90=0.00003, downscale=
     # 25% of the chip
     bai = (chip[1, :, :] - chip[6, :, :]) / (chip[1, :, :] + chip[6, :, :])
     bai[np.isnan(bai)] = 0
-    bai_rescale = exposure.rescale_intensity(bai, out_range=(-1, 1))
+    bai_rescale = exposure.rescale_intensity(np.clip(bai, -.9, .9), out_range=(-1, 1))
     bai_downsamp = transform.pyramid_reduce(bai_rescale, downscale=downscale, multichannel=False)
     bai_results = ndimage.generic_filter(bai_downsamp, np.mean, footprint=bldg_array,
                                          mode='constant', cval=-9999)
     bai_results_masked = np.ma.masked_where(mask == -9999, bai_results)
-    bai_max = np.ma.greater_equal(bai_results_masked, np.percentile(bai_results_masked.compressed(), 75))
+    bai_max = (np.ma.greater_equal(bai_results_masked, np.percentile(bai_results_masked.compressed(), 90)))# &
+#                np.ma.less_equal(bai_results_masked, np.percentile(bai_results_masked.compressed(), 98)))
 
     # step 3 -- using a moving window of the building array, determine areas where the total sum of squares
     # difference of the RGB channels is in the lower 50% of the chip
@@ -167,7 +168,6 @@ def calc_translation(geom, image, search_buffer=0.0001, le90=0.00003, downscale=
                                                       footprint=bldg_array,
                                                       mode='constant', cval=-9999)
     mask = np.ones(rgb.shape) * mask[:, :, None]
-    tss_results_masked = np.ma.masked_where(mask == -9999, tss_results)
     tss_sum = np.ma.sum(tss_results, axis=2)
     tss_sum.mask = mask[:, :, 0]
     tss_min = np.ma.less_equal(tss_sum, np.percentile(tss_sum.compressed(), 50))
@@ -191,6 +191,7 @@ def calc_translation(geom, image, search_buffer=0.0001, le90=0.00003, downscale=
     xoff, yoff = np.array(new_centroid.coords[0]) - np.array(geom.centroid.coords[0])
 
     return xoff, yoff
+
 
 
 def align_to_image(geoms_df, image, le90=0.00003, search_buffer=0.0001, downscale=3, progress=True):
